@@ -30,8 +30,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
-  Surface
+  Cell
 } from 'recharts';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -90,10 +89,10 @@ const DataCharts = ({ data }: DataChartsProps) => {
   // Check if we have valid data to display charts
   const hasValidData = data.length > 0 && columns.length > 0;
 
-  // Mobile-optimized chart dimensions
-  const chartHeight = isMobile ? 300 : 400;
+  // Mobile-optimized chart dimensions - Fixed height is crucial for Android rendering
+  const chartHeight = 300; // Fixed height instead of dynamic
   const marginConfig = isMobile ? 
-    { top: 15, right: 10, left: 5, bottom: 40 } : 
+    { top: 15, right: 10, left: 0, bottom: 40 } : 
     { top: 20, right: 30, left: 20, bottom: 60 };
 
   // Mobile-optimized axis configuration
@@ -145,7 +144,6 @@ const DataCharts = ({ data }: DataChartsProps) => {
         </TabsList>
         
         <div className="flex flex-wrap gap-2">
-          {/* X-Axis selector (not needed for pie) */}
           <Select value={xAxis} onValueChange={setXAxis}>
             <SelectTrigger className="w-[100px] md:w-[120px]">
               <SelectValue placeholder="X Axis" />
@@ -157,7 +155,6 @@ const DataCharts = ({ data }: DataChartsProps) => {
             </SelectContent>
           </Select>
           
-          {/* Y-Axis selector (not needed for pie) */}
           <Select value={yAxis} onValueChange={setYAxis}>
             <SelectTrigger className="w-[100px] md:w-[120px]">
               <SelectValue placeholder="Y Axis" />
@@ -169,7 +166,6 @@ const DataCharts = ({ data }: DataChartsProps) => {
             </SelectContent>
           </Select>
           
-          {/* Category selector (for pie chart) */}
           <Select value={categoryField} onValueChange={setCategoryField}>
             <SelectTrigger className="w-[100px] md:w-[120px]">
               <SelectValue placeholder="Category" />
@@ -193,36 +189,36 @@ const DataCharts = ({ data }: DataChartsProps) => {
             Interactive charts to explore your data
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className={`h-[${chartHeight}px] w-full`}>
-            <TabsContent value="bar" className="h-full">
+        <CardContent className="p-2 md:p-4">
+          <div style={{ width: '100%', height: `${chartHeight}px` }} className="touch-manipulation">
+            <TabsContent value="bar" className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={marginConfig} barSize={isMobile ? 15 : 20}>
                   <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.7} />
                   <XAxis {...xAxisConfig} />
                   <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} width={isMobile ? 30 : 40} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
+                  <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12, paddingTop: 8 }} />
                   <Bar dataKey={yAxis} fill="#1a73e8" name={yAxis} animationDuration={500} />
                 </BarChart>
               </ResponsiveContainer>
             </TabsContent>
             
-            <TabsContent value="line" className="h-full">
+            <TabsContent value="line" className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data} margin={marginConfig}>
                   <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.7} />
                   <XAxis {...xAxisConfig} />
                   <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} width={isMobile ? 30 : 40} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
+                  <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12, paddingTop: 8 }} />
                   <Line 
                     type="monotone" 
                     dataKey={yAxis} 
                     stroke="#00a3bf" 
                     name={yAxis}
-                    dot={{ fill: '#00a3bf', strokeWidth: 2, r: isMobile ? 3 : 5 }}
-                    activeDot={{ r: isMobile ? 5 : 6 }}
+                    dot={{ fill: '#00a3bf', strokeWidth: 2, r: isMobile ? 2 : 4 }}
+                    activeDot={{ r: isMobile ? 4 : 6 }}
                     animationDuration={500}
                     strokeWidth={2}
                   />
@@ -230,19 +226,23 @@ const DataCharts = ({ data }: DataChartsProps) => {
               </ResponsiveContainer>
             </TabsContent>
             
-            <TabsContent value="pie" className="h-full">
+            <TabsContent value="pie" className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart margin={isMobile ? { top: 10, right: 10, left: 10, bottom: 10 } : { top: 20, right: 30, left: 20, bottom: 20 }}>
+                <PieChart margin={isMobile ? { top: 5, right: 5, left: 5, bottom: 5 } : { top: 20, right: 20, left: 20, bottom: 20 }}>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    labelLine={!isMobile}
+                    labelLine={false}
                     outerRadius={isMobile ? 80 : 120}
                     fill="#8884d8"
                     dataKey="value"
                     nameKey="name"
-                    label={isMobile ? undefined : ({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => 
+                      isMobile 
+                        ? `${percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}` 
+                        : `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
                     animationDuration={500}
                   >
                     {pieData.map((entry, index) => (
@@ -250,12 +250,19 @@ const DataCharts = ({ data }: DataChartsProps) => {
                     ))}
                   </Pie>
                   <Tooltip formatter={(value) => [`${value} entries`, "Count"]} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" 
+                    wrapperStyle={{ 
+                      fontSize: isMobile ? 9 : 12, 
+                      paddingTop: 8,
+                      width: '100%',
+                      marginLeft: 'auto',
+                      marginRight: 'auto'
+                    }} />
                 </PieChart>
               </ResponsiveContainer>
             </TabsContent>
             
-            <TabsContent value="scatter" className="h-full">
+            <TabsContent value="scatter" className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart margin={marginConfig}>
                   <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.7} />
@@ -275,12 +282,12 @@ const DataCharts = ({ data }: DataChartsProps) => {
                     width={isMobile ? 30 : 40}
                   />
                   <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
+                  <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12, paddingTop: 8 }} />
                   <Scatter 
                     name={`${xAxis} vs ${yAxis}`} 
                     data={data} 
                     fill="#ffab00"
-                    shape={isMobile ? "circle" : "circle"}
+                    shape="circle"
                     animationDuration={500}
                   />
                 </ScatterChart>
