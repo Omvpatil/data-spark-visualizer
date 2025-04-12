@@ -35,7 +35,7 @@ const queryClient = new QueryClient({
     queries: {
       // Optimize for mobile: decrease network requests
       staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
       retry: 1, // Only retry once on mobile to save bandwidth
       refetchOnWindowFocus: false, // Don't refetch when app comes to foreground
     },
